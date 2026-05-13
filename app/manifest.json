@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "M365 Copilot Chat Conversation Exporter",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "Export Microsoft 365 Copilot Chat conversations as readable Markdown with a raw JSON companion.",
   "action": {
     "default_popup": "popup.html",

@@ -1,14 +1,10 @@
-# M365 Copilot Chat Conversation Exporter Extension v1.0.28
+# M365 Copilot Chat Conversation Exporter Extension v1.0.29
 
-Documentation and metadata-only update for the browser extension.
+Publication-preparation update for the browser extension.
 
 ## What it does
 
-Exports the current Microsoft 365 work/school Copilot Chat conversation as:
-
-- readable Markdown
-- raw JSON companion Markdown
-- diagnostic JSON Markdown when troubleshooting is needed
+Exports the current Microsoft 365 work/school Copilot Chat conversation as readable Markdown, raw JSON companion Markdown, and diagnostic JSON Markdown when troubleshooting is needed.
 
 ## Load locally
 
@@ -18,24 +14,17 @@ Load the extension runtime folder as an unpacked extension:
 public/extension/app
 ```
 
-After reloading the extension, refresh the Microsoft 365 Copilot Chat tab so the latest content scripts are active.
-
 ## Source and support
 
-Source:
+Source and support are available from the public extension repository:
 
 ```text
 https://github.com/site-speed/M365-Copilot-Chat-Export-extension
 ```
 
-Issues:
-
-```text
-https://github.com/site-speed/M365-Copilot-Chat-Export-extension/issues
-```
-
 ## Notes
 
+- Adds a public-facing `PRIVACY.md` for Edge Add-ons publication preparation.
+- Adds tooling to package `public/extension/app` as a store-submission ZIP.
 - No extension export-format or runtime behaviour changes.
-- Keeps the v1.0.26 Substrate URL hardening: passive network hooks use URL parsing and exact `substrate.office.com` hostname checks.
 - Exported files may contain sensitive work data and should be handled carefully.
