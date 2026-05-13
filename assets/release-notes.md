@@ -1,6 +1,6 @@
-# M365 Copilot Chat Conversation Exporter Extension v1.0.22
+# M365 Copilot Chat Conversation Exporter Extension v1.0.27
 
-Documentation correction for the browser extension public release notes.
+Documentation and release-metadata sync update for the browser extension.
 
 ## What it does
 
@@ -38,8 +38,7 @@ https://github.com/site-speed/M365-Copilot-Chat-Export-extension/issues
 
 ## Notes
 
-- Targets M365 Copilot Chat for Microsoft 365 work/school accounts.
-- Runs locally in the browser using the existing authenticated session.
+- Fixes public README version metadata so release checks recognise the current extension version.
+- Keeps the v1.0.26 Substrate URL hardening: page-world and renderer network hooks use URL parsing and exact `substrate.office.com` hostname checks.
+- No export-format or runtime behaviour changes beyond version/metadata alignment.
 - Exported `.md`, `.json.md`, and `.diagnostic.json.md` files may contain sensitive work data and should be handled carefully.
-- v1.0.22 has no browser extension runtime changes.
-- v1.0.22 restores this public release-note structure for future extension releases.

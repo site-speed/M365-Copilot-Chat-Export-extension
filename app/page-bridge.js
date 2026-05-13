@@ -4,7 +4,7 @@
   const BRIDGE_SOURCE = "m365ce-extension-bridge";
   const CONTENT_SOURCE = "m365ce-extension-content";
   const SUBSTRATE_BASE = "https://substrate.office.com/m365Copilot";
-  const EXTENSION_VERSION = "1.0.22";
+  const EXTENSION_VERSION = "1.0.27";
   let lastCapturedConversation = null;
   let lastCapturedRawConversation = null;
   let fetchHookInstalled = false;
@@ -199,6 +199,16 @@
     return { json, auth, summary: lastCapturedConversation };
   }
 
+
+  function isSubstrateGetConversationUrl(rawUrl) {
+    try {
+      const parsedUrl = new URL(String(rawUrl || ""), location.href);
+      return parsedUrl.hostname === "substrate.office.com" && parsedUrl.pathname.includes("GetConversation");
+    } catch {
+      return false;
+    }
+  }
+
   function installFetchHook() {
     if (fetchHookInstalled) { return; }
     fetchHookInstalled = true;
@@ -206,7 +216,7 @@
     window.fetch = async function (...args) {
       const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
       const response = await originalFetch.apply(this, args);
-      if (url.includes("GetConversation") && url.includes("substrate.office.com")) {
+      if (isSubstrateGetConversationUrl(url)) {
         response.clone().json().then((json) => { lastCapturedRawConversation = json; lastCapturedConversation = summarizeConversation(json, "observed-fetch"); }).catch(() => {});
       }
       return response;
@@ -223,7 +233,7 @@
       this.addEventListener("load", function () {
         try {
           const url = this.__m365ceUrl || "";
-          if (url.includes("GetConversation") && url.includes("substrate.office.com")) {
+          if (isSubstrateGetConversationUrl(url)) {
             const json = JSON.parse(this.responseText);
             lastCapturedRawConversation = json;
             lastCapturedConversation = summarizeConversation(json, "observed-xhr");
