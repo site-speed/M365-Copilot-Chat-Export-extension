@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "M365 Copilot Chat Conversation Exporter",
+  "version": "1.0.20",
+  "description": "Export Microsoft 365 Copilot Chat conversations as readable Markdown with a raw JSON companion.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "M365 Copilot Chat Conversation Exporter"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://m365.cloud.microsoft/chat*",
+        "https://m365.cloud.microsoft/*/chat*",
+        "https://microsoft365.com/chat*",
+        "https://www.microsoft365.com/chat*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://m365.cloud.microsoft/*",
+    "https://microsoft365.com/*",
+    "https://www.microsoft365.com/*",
+    "https://substrate.office.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "renderer-bridge.js",
+        "page-bridge.js"
+      ],
+      "matches": [
+        "https://m365.cloud.microsoft/*",
+        "https://microsoft365.com/*",
+        "https://www.microsoft365.com/*"
+      ]
+    }
+  ]
+}
