@@ -4,7 +4,7 @@ function isoTimestampForFilename(date = new Date()) { return date.toISOString().
 function sanitizeFilenamePart(value) { const raw = String(value || "m365-copilot-extension-output"); const safe = raw.replace(new RegExp("[\\x00-\\x1F<>:\"/\\\\|?*]+", "g"), " ").replace(/\s+/g, " ").trim(); return (safe || "m365-copilot-extension-output").slice(0, 160).replace(/[ .]+$/g, "") || "m365-copilot-extension-output"; }
 function longestFenceRun(text, marker) { const matches = String(text || "").match(new RegExp(`${marker}{3,}`, "g")) || []; return matches.reduce((max, item) => Math.max(max, item.length), 0); }
 function renderFencedBlock(text, language = "") { const body = String(text ?? ""); const backtickLength = Math.max(3, longestFenceRun(body, "`") + 1); const fence = "`".repeat(backtickLength); return `${fence}${language}\n${body}\n${fence}`; }
-function extensionVersion() { return chrome.runtime.getManifest()?.version || "1.0.21"; }
+function extensionVersion() { return chrome.runtime.getManifest()?.version || "1.0.22"; }
 function diagnosticJsonMarkdown(diagnostic, exportedAt = new Date().toISOString()) { return [`## M365 Copilot Chat Conversation Exporter diagnostic`, `- Exported: ${exportedAt}`, `- ExporterVersion: ${extensionVersion()}`, `- ExporterRuntime: browser-extension`, "", renderFencedBlock(JSON.stringify(diagnostic, null, 2), "json"), ""].join("\n"); }
 function setText(id, value) { const element = document.getElementById(id); if (element) { element.textContent = value; } }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch])); }

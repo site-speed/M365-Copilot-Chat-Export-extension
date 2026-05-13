@@ -1,6 +1,6 @@
 # M365 Copilot Chat Conversation Exporter — Browser Extension
 
-Version: **v1.0.21**
+Version: **v1.0.22**
 
 Export Microsoft 365 Copilot Chat conversations as readable Markdown with a raw JSON companion.
 
@@ -51,6 +51,20 @@ After reloading the extension, refresh the Microsoft 365 Copilot Chat tab so the
 ## Permissions
 
 The extension requests browser permissions needed to read the active Microsoft 365 Copilot Chat page and trigger local downloads. Host permissions are scoped to Microsoft 365 Copilot and related Microsoft 365/Substrate endpoints used by the exporter.
+
+## Source and support
+
+Source:
+
+```text
+https://github.com/site-speed/M365-Copilot-Chat-Export-extension
+```
+
+Issues:
+
+```text
+https://github.com/site-speed/M365-Copilot-Chat-Export-extension/issues
+```
 
 ## Privacy and data handling
 
