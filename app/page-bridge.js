@@ -4,7 +4,7 @@
   const BRIDGE_SOURCE = "m365ce-extension-bridge";
   const CONTENT_SOURCE = "m365ce-extension-content";
   const SUBSTRATE_BASE = "https://substrate.office.com/m365Copilot";
-  const EXTENSION_VERSION = "1.0.27";
+  const EXTENSION_VERSION = "1.0.28";
   let lastCapturedConversation = null;
   let lastCapturedRawConversation = null;
   let fetchHookInstalled = false;
