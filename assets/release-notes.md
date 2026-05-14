@@ -1,30 +1,21 @@
-# M365 Copilot Chat Conversation Exporter Extension v1.0.29
+# M365 Copilot Chat Conversation Exporter Extension v1.0.30
 
-Publication-preparation update for the browser extension.
+Adds the extension icon set and records the first Edge Add-ons submission identifiers for future update submissions.
 
 ## What it does
 
-Exports the current Microsoft 365 work/school Copilot Chat conversation as readable Markdown, raw JSON companion Markdown, and diagnostic JSON Markdown when troubleshooting is needed.
+The extension exports the currently open Microsoft 365 Copilot Chat conversation as readable Markdown with a raw JSON Markdown companion backup.
 
-## Load locally
+## Load locally for the extension
 
-Load the extension runtime folder as an unpacked extension:
-
-```text
-public/extension/app
-```
+Load the unpacked extension from `public/extension/app` during local testing, or use the packaged ZIP produced by `bun run package:edge-extension` for Edge Add-ons submission.
 
 ## Source and support
 
-Source and support are available from the public extension repository:
-
-```text
-https://github.com/site-speed/M365-Copilot-Chat-Export-extension
-```
+Source and issue reporting are available from the public extension repository.
 
 ## Notes
 
-- Adds a public-facing `PRIVACY.md` for Edge Add-ons publication preparation.
-- Adds tooling to package `public/extension/app` as a store-submission ZIP.
-- No extension export-format or runtime behaviour changes.
-- Exported files may contain sensitive work data and should be handled carefully.
+- Adds robot/download-themed extension icons to the runtime package and manifest.
+- Adds generated Edge Add-ons identity metadata under `dist/edge-extension/EDGE_ADDONS_IDENTITY.md`.
+- No export-format or data-handling behaviour changes.

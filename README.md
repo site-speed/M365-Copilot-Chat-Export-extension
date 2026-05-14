@@ -1,6 +1,6 @@
 # M365 Copilot Chat Conversation Exporter — Browser Extension
 
-Version: **v1.0.29**
+Version: **v1.0.30**
 
 Export Microsoft 365 Copilot Chat conversations as readable Markdown with a raw JSON companion.
 
@@ -98,3 +98,8 @@ MIT License. Copyright 2026 Tim Moss.
 ## Privacy policy
 
 See [PRIVACY.md](PRIVACY.md) for the extension privacy policy. The extension is designed for local export and does not operate a backend service for uploaded conversation data.
+
+
+## Extension icon
+
+The packaged extension includes robot/download-themed PNG icons in `app/icons/` and a 300×300 listing logo in `assets/extension-logo-300.png`.

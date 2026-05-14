@@ -1,6 +1,6 @@
 # Privacy Policy — M365 Copilot Chat Conversation Exporter Extension
 
-Last updated: 2026-05-13
+Last updated: 2026-05-14
 
 ## Summary
 

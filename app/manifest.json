@@ -1,11 +1,17 @@
 {
   "manifest_version": 3,
   "name": "M365 Copilot Chat Conversation Exporter",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "description": "Export Microsoft 365 Copilot Chat conversations as readable Markdown with a raw JSON companion.",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "M365 Copilot Chat Conversation Exporter"
+    "default_title": "M365 Copilot Chat Conversation Exporter",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
   "background": {
     "service_worker": "background.js",
@@ -48,5 +54,11 @@
         "https://www.microsoft365.com/*"
       ]
     }
-  ]
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
 }
