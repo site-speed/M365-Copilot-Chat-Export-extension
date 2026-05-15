@@ -9,11 +9,15 @@
   <main>
     <h1>M365 Copilot Chat Conversation Exporter</h1>
     <div id="extension-version" class="version">Version loading…</div>
-    <p class="hint">Export the current chat as a readable Markdown file plus its raw JSON companion.</p>
+    <p class="hint">Export the current chat as readable Markdown and raw JSON.</p>
     <section id="page-info" class="panel">Loading tab status…</section>
+    <section id="recovery-actions" class="recovery" hidden>
+      <p id="recovery-message">If you have just installed or updated the extension, reload the Copilot Chat tab and try again.</p>
+      <div class="buttons"><button id="reload-tab">Reload current tab</button><button id="open-m365-chat">Open Microsoft 365 Copilot Chat</button></div>
+    </section>
     <label class="option"><input id="include-unclassified-records" type="checkbox" checked> Include unclassified records</label>
-    <p class="option-hint">Includes fallback evidence for records the exporter does not yet classify cleanly.</p>
-    <div class="buttons"><button id="export-current" class="primary">Export .md + .json.md</button></div>
+    <p class="option-hint">Includes raw records the exporter does not yet classify.</p>
+    <div id="export-actions" class="buttons"><button id="export-current" class="primary">Export .md + .json.md</button></div>
     <details class="diagnostics"><summary>Troubleshooting</summary><div class="buttons"><button id="refresh-page">Refresh page info</button><button id="download-diagnostic-bundle">Download diagnostic bundle</button></div><section><h2>Result</h2><pre id="result">No diagnostic run yet.</pre></section></details>
   </main>
   <script type="module" src="popup.js"></script>

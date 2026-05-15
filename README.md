@@ -1,12 +1,12 @@
 # M365 Copilot Chat Conversation Exporter — Browser Extension
 
-Version: **v1.0.30**
+Version: **v1.0.37**
 
-Export Microsoft 365 Copilot Chat conversations as readable Markdown with a raw JSON companion.
+Export Microsoft 365 Copilot Chat as readable Markdown and raw JSON.
 
 ## What it does
 
-This Manifest V3 browser extension exports the current Microsoft 365 Copilot Chat conversation from an authenticated browser session.
+This Manifest V3 browser extension exports the current Microsoft 365 Copilot Chat from an authenticated browser session.
 
 The extension is intended for Edge/Chromium-compatible browsers and currently focuses on local validation and export behaviour.
 
@@ -34,15 +34,15 @@ After reloading the extension, refresh the Microsoft 365 Copilot Chat tab so the
 
 ## Usage
 
-1. Open a Microsoft 365 Copilot Chat conversation.
+1. Open a Microsoft 365 Copilot Chat.
 2. Open the extension popup from the browser toolbar.
-3. Confirm the popup shows the expected conversation title and conversation ID.
+3. Confirm the popup shows the expected chat title and ConversationId.
 4. Click the export button.
 5. Keep the generated Markdown and raw JSON Markdown files together.
 
 ## Current behaviour
 
-- Shows the active conversation title and conversation ID in the popup.
+- Shows the active chat title and ConversationId in the popup.
 - Exports readable Markdown plus a raw JSON Markdown companion.
 - Uses filesystem-safe timestamped filenames.
 - Keeps troubleshooting and diagnostic controls available but secondary.

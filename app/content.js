@@ -3,6 +3,7 @@ const CONTENT_SOURCE = "m365ce-extension-content";
 const pendingBridgeRequests = new Map();
 let rendererInjected = false;
 let bridgeInjected = false;
+let pageBridgeReady = false;
 
 function inferConversationIdFromUrl(href = location.href) {
   try {
@@ -57,8 +58,12 @@ function injectBridge() {
   injectPageBridge();
 }
 
+function isSpecificChatPage() {
+  return isRelevantChatPage() && Boolean(inferConversationIdFromUrl());
+}
+
 function sendActiveState() {
-  chrome.runtime.sendMessage({ type: "M365CE_EXTENSION_ACTIVE_STATE", active: isRelevantChatPage() }).catch(() => {});
+  chrome.runtime.sendMessage({ type: "M365CE_EXTENSION_ACTIVE_STATE", active: isSpecificChatPage() && pageBridgeReady }).catch(() => {});
 }
 
 function bridgeRequest(type, payload = {}, timeoutMs = 45000) {
@@ -79,7 +84,15 @@ window.addEventListener("message", (event) => {
     return;
   }
   const data = event.data;
-  if (!data || data.source !== BRIDGE_SOURCE || !data.requestId) {
+  if (!data || data.source !== BRIDGE_SOURCE) {
+    return;
+  }
+  if (data.type === "M365CE_BRIDGE_READY") {
+    pageBridgeReady = true;
+    sendActiveState();
+    return;
+  }
+  if (!data.requestId) {
     return;
   }
   const pending = pendingBridgeRequests.get(data.requestId);
