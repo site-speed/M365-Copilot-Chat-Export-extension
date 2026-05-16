@@ -4,7 +4,7 @@
   const BRIDGE_SOURCE = "m365ce-extension-bridge";
   const CONTENT_SOURCE = "m365ce-extension-content";
   const SUBSTRATE_BASE = "https://substrate.office.com/m365Copilot";
-  const EXTENSION_VERSION = "1.0.37";
+  const EXTENSION_VERSION = "1.0.40";
   let lastCapturedConversation = null;
   let lastCapturedRawConversation = null;
   let fetchHookInstalled = false;
@@ -23,7 +23,7 @@
   }
 
   function isoTimestampForFilename(date = new Date()) {
-    return date.toISOString().replace(/:/g, "-");
+    return date.toISOString().replace("T","_").replace(/:/g, "-");
   }
 
   function longestFenceRun(text, marker) {

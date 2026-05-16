@@ -1,28 +1,26 @@
-# M365 Copilot Chat Conversation Exporter Extension v1.0.37
+# M365 Copilot Chat Conversation Exporter (Extension) v1.0.40
 
-Tightens chat-history navigation, toolbar badge accuracy, and low-value internal record filtering.
+Improves export filename consistency and overall reliability.
 
 ## What it does
 
-The extension exports the currently open Microsoft 365 Copilot Chat as readable Markdown with a raw JSON Markdown companion backup.
+Exports Microsoft 365 Copilot Chat conversations to:
 
-## Load locally for the extension
+- Readable Markdown (.md)
+- Raw JSON Markdown (.json.md)
 
-For unpacked installation, load the extension from the `app` folder using your browser's extension developer tools.
+## Load locally
 
-1. Open your browser's extensions page.
-2. Enable developer mode.
-3. Choose **Load unpacked**.
-4. Select the `app` folder from the extracted release package.
-5. Refresh the Microsoft 365 Copilot Chat tab after loading or updating the extension.
+- Download the extension package
+- Load unpacked from from the `app` folder.
+- Open Copilot Chat and export from the popup
 
 ## Source and support
 
-Source and issue reporting are available from the public extension repository.
+https://github.com/site-speed/M365-Copilot-Chat-Export-userscript
 
 ## Notes
 
-- The **Open Microsoft 365 Copilot Chat** action now opens the chat history listing.
-- The toolbar **ON** badge now appears only for a specific chat URL after the extension bridge has connected.
-- Internal ModelSelector records are treated as known low-value metadata and excluded from readable Markdown fallback blocks.
-- No export-format or data-handling behaviour changes.
+- ✅ Consistent timestamp format (_ instead of T)
+- ✅ Fixed popup vs page export mismatch
+- ✅ Improved export reliability
