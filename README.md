@@ -8,7 +8,7 @@ Export Microsoft 365 Copilot Chat as readable Markdown and raw JSON.
 
 This Manifest V3 browser extension exports the current Microsoft 365 Copilot Chat from an authenticated browser session.
 
-The extension is intended for Edge/Chromium-compatible browsers and currently focuses on local validation and export behaviour.
+The extension is intended for Edge/Chromium-compatible browsers. It is available from Microsoft Edge Add-ons, with unpacked loading still available for local testing or manual installation.
 
 ## Screenshot
 
@@ -21,6 +21,14 @@ The extension can generate:
 1. readable Markdown (`.md`) for human review and handoff;
 2. raw JSON Markdown (`.json.md`) as the complete local backup;
 3. diagnostic JSON Markdown (`.diagnostic.json.md`) when troubleshooting is needed.
+
+## Install from Microsoft Edge Add-ons
+
+Install the released extension from Microsoft Edge Add-ons:
+
+```text
+https://microsoftedge.microsoft.com/addons/detail/bfgemlnkhckcdkndiemkahojkbdbpmpm
+```
 
 ## Load locally
 
@@ -75,7 +83,7 @@ Treat `.md`, `.json.md`, and `.diagnostic.json.md` files as private unless revie
 ## Limitations
 
 - Microsoft 365 Copilot Chat APIs and page structure can change.
-- The extension is not yet a store-published package.
+- The extension is published in Microsoft Edge Add-ons; unpacked installation remains useful for local testing and manual validation.
 - Diagnostic exports are intended for troubleshooting and may contain additional technical detail.
 
 ## Release notes
