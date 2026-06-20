@@ -5,9 +5,9 @@
 
 ![Issues opened in last 30 days](https://img.shields.io/badge/Issues%20opened%20in%20last%2030%20days-0-green?labelColor=555) ![Issues closed in last 30 days](https://img.shields.io/badge/Issues%20closed%20in%20last%2030%20days-0-red?labelColor=555) ![Open issues](https://img.shields.io/badge/Open%20issues-0-blue?labelColor=555)
 
-![Lines added (last 30 days)](https://img.shields.io/badge/Lines%20added%20(last%2030%20days)-95-green?labelColor=555) ![Lines deleted (last 30 days)](https://img.shields.io/badge/Lines%20deleted%20(last%2030%20days)-9-red?labelColor=555) ![Commits in last 30 days](https://img.shields.io/badge/Commits%20in%20last%2030%20days-3-blue?labelColor=555)
+![Lines added (last 30 days)](https://img.shields.io/badge/Lines%20added%20(last%2030%20days)-102-green?labelColor=555) ![Lines deleted (last 30 days)](https://img.shields.io/badge/Lines%20deleted%20(last%2030%20days)-9-red?labelColor=555) ![Commits in last 30 days](https://img.shields.io/badge/Commits%20in%20last%2030%20days-4-blue?labelColor=555)
 
-![Contributors (unique)](https://img.shields.io/badge/Contributors%20(unique)-1-blue?labelColor=555) ![Active contributors (last 30d)](https://img.shields.io/badge/Active%20contributors%20(last%2030d)-1-blue?labelColor=555)
+![Contributors (unique)](https://img.shields.io/badge/Contributors%20(unique)-2-blue?labelColor=555) ![Active contributors (last 30d)](https://img.shields.io/badge/Active%20contributors%20(last%2030d)-2-blue?labelColor=555)
 <!-- end user badges -->
 
 Version: **v1.0.40**
