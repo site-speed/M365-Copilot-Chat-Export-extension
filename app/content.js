@@ -4,6 +4,10 @@ const pendingBridgeRequests = new Map();
 let rendererInjected = false;
 let bridgeInjected = false;
 let pageBridgeReady = false;
+const bridgeReadyWaiters = new Set();
+const BRIDGE_READY_TIMEOUT_MS = 10000;
+const BRIDGE_FETCH_TIMEOUT_MS = 90000;
+const BRIDGE_CACHED_TIMEOUT_MS = 10000;
 
 function inferConversationIdFromUrl(href = location.href) {
   try {
@@ -66,13 +70,34 @@ function sendActiveState() {
   chrome.runtime.sendMessage({ type: "M365CE_EXTENSION_ACTIVE_STATE", active: isSpecificChatPage() && pageBridgeReady }).catch(() => {});
 }
 
-function bridgeRequest(type, payload = {}, timeoutMs = 45000) {
+function waitForPageBridge(timeoutMs = BRIDGE_READY_TIMEOUT_MS) {
   injectBridge();
+  if (pageBridgeReady) {
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    const waiter = () => {
+      clearTimeout(timer);
+      bridgeReadyWaiters.delete(waiter);
+      resolve(true);
+    };
+    const timer = setTimeout(() => {
+      bridgeReadyWaiters.delete(waiter);
+      resolve(false);
+    }, timeoutMs);
+    bridgeReadyWaiters.add(waiter);
+  });
+}
+
+async function bridgeRequest(type, payload = {}, timeoutMs = BRIDGE_FETCH_TIMEOUT_MS) {
+  if (!(await waitForPageBridge())) {
+    return { ok: false, errorCode: "bridge-not-ready", requestType: type, error: `Page bridge was not ready after ${BRIDGE_READY_TIMEOUT_MS}ms` };
+  }
   const requestId = crypto.randomUUID();
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       pendingBridgeRequests.delete(requestId);
-      resolve({ ok: false, error: `Bridge request timed out after ${timeoutMs}ms` });
+      resolve({ ok: false, errorCode: "bridge-timeout", requestType: type, error: `Bridge request timed out after ${timeoutMs}ms` });
     }, timeoutMs);
     pendingBridgeRequests.set(requestId, { resolve, timer });
     window.postMessage({ source: CONTENT_SOURCE, type, requestId, payload }, window.location.origin);
@@ -89,6 +114,9 @@ window.addEventListener("message", (event) => {
   }
   if (data.type === "M365CE_BRIDGE_READY") {
     pageBridgeReady = true;
+    for (const waiter of [...bridgeReadyWaiters]) {
+      waiter();
+    }
     sendActiveState();
     return;
   }
@@ -106,23 +134,23 @@ window.addEventListener("message", (event) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "M365CE_GET_PAGE_INFO") {
-    sendResponse({ ok: true, active: isRelevantChatPage(), href: location.href, conversationId: inferConversationIdFromUrl(), refreshedAt: new Date().toISOString() });
+    sendResponse({ ok: true, active: isRelevantChatPage() && pageBridgeReady, bridgeReady: pageBridgeReady, href: location.href, conversationId: inferConversationIdFromUrl(), refreshedAt: new Date().toISOString() });
     return false;
   }
   if (message?.type === "M365CE_TEST_SUBSTRATE") {
-    bridgeRequest("M365CE_BRIDGE_TEST_SUBSTRATE", { conversationId: inferConversationIdFromUrl(), href: location.href }).then(sendResponse);
+    bridgeRequest("M365CE_BRIDGE_TEST_SUBSTRATE", { conversationId: inferConversationIdFromUrl(), href: location.href }, BRIDGE_FETCH_TIMEOUT_MS).then(sendResponse);
     return true;
   }
   if (message?.type === "M365CE_GET_LAST_CAPTURED") {
-    bridgeRequest("M365CE_BRIDGE_GET_LAST_CAPTURED", {}).then(sendResponse);
+    bridgeRequest("M365CE_BRIDGE_GET_LAST_CAPTURED", {}, BRIDGE_CACHED_TIMEOUT_MS).then(sendResponse);
     return true;
   }
   if (message?.type === "M365CE_GET_RAW_JSON_MARKDOWN") {
-    bridgeRequest("M365CE_BRIDGE_GET_RAW_JSON_MARKDOWN", { conversationId: inferConversationIdFromUrl(), href: location.href }).then(sendResponse);
+    bridgeRequest("M365CE_BRIDGE_GET_RAW_JSON_MARKDOWN", { conversationId: inferConversationIdFromUrl(), href: location.href }, BRIDGE_FETCH_TIMEOUT_MS).then(sendResponse);
     return true;
   }
   if (message?.type === "M365CE_GET_EXPORT_FILES") {
-    bridgeRequest("M365CE_BRIDGE_GET_EXPORT_FILES", { conversationId: inferConversationIdFromUrl(), href: location.href, options: message?.options || {} }).then(sendResponse);
+    bridgeRequest("M365CE_BRIDGE_GET_EXPORT_FILES", { conversationId: inferConversationIdFromUrl(), href: location.href, options: message?.options || {} }, BRIDGE_FETCH_TIMEOUT_MS).then(sendResponse);
     return true;
   }
   return false;

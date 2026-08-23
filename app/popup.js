@@ -6,8 +6,29 @@ function isoTimestampForFilename(date = new Date()) { return date.toISOString().
 function sanitizeFilenamePart(value) { const raw = String(value || "m365-copilot-extension-output"); const safe = raw.replace(new RegExp("[\\x00-\\x1F<>:\"/\\\\|?*]+", "g"), " ").replace(/\s+/g, " ").trim(); return (safe || "m365-copilot-extension-output").slice(0, 160).replace(/[ .]+$/g, "") || "m365-copilot-extension-output"; }
 function longestFenceRun(text, marker) { const matches = String(text || "").match(new RegExp(`${marker}{3,}`, "g")) || []; return matches.reduce((max, item) => Math.max(max, item.length), 0); }
 function renderFencedBlock(text, language = "") { const body = String(text ?? ""); const backtickLength = Math.max(3, longestFenceRun(body, "`") + 1); const fence = "`".repeat(backtickLength); return `${fence}${language}\n${body}\n${fence}`; }
-function extensionVersion() { return chrome.runtime.getManifest()?.version || "1.0.40"; }
-function diagnosticJsonMarkdown(diagnostic, exportedAt = new Date().toISOString()) { return [`## M365 Copilot Chat Conversation Exporter diagnostic`, `- Exported: ${exportedAt}`, `- ExporterVersion: ${extensionVersion()}`, `- ExporterRuntime: browser-extension`, "", renderFencedBlock(JSON.stringify(diagnostic, null, 2), "json"), ""].join("\n"); }
+function extensionVersion() { return chrome.runtime.getManifest()?.version || "1.0.42"; }
+function diagnosticValue(value, maxLength = 240) { return String(value ?? "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLength); }
+function diagnosticSummaryLines(diagnostic) {
+  const summary = diagnostic?.result?.bundle?.substrateTest || diagnostic?.result?.substrateTest || null;
+  if (!summary?.ok) { return []; }
+  const lines = [];
+  const values = [
+    ["Chat", summary.chatName],
+    ["ConversationId", summary.conversationId],
+    ["RawMessageRecords", summary.messageCount],
+    ["Created", summary.createdAt],
+    ["Updated", summary.updatedAt],
+    ["ModelTone", summary.tone],
+    ["Plugins", Array.isArray(summary.plugins) ? summary.plugins.join(", ") : summary.plugins],
+  ];
+  for (const [label, value] of values) {
+    if (value !== null && value !== undefined && value !== "") { lines.push(`- ${label}: ${diagnosticValue(value)}`); }
+  }
+  if (summary.turnState && String(summary.turnState).toLowerCase() !== "completed") { lines.push(`- TurnState: ${diagnosticValue(summary.turnState)}`); }
+  if (Array.isArray(summary.topLevelKeys)) { lines.push(`- TopLevelKeys (${summary.topLevelKeys.length}): ${summary.topLevelKeys.map((key) => diagnosticValue(key, 80)).join(", ")}`); }
+  return lines;
+}
+function diagnosticJsonMarkdown(diagnostic, exportedAt = new Date().toISOString()) { return [`## M365 Copilot Chat Conversation Exporter diagnostic`, `- Exported: ${exportedAt}`, `- ExporterVersion: ${extensionVersion()}`, `- ExporterRuntime: browser-extension`, ...diagnosticSummaryLines(diagnostic), "", renderFencedBlock(JSON.stringify(diagnostic, null, 2), "json"), ""].join("\n"); }
 function setText(id, value) { const element = document.getElementById(id); if (element) { element.textContent = value; } }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch])); }
 function showVersion() { setText("extension-version", `v${extensionVersion()}`); }
@@ -57,23 +78,23 @@ function renderUnsupportedOrDisconnectedInfo(info, panel) {
   appendPopupLine(panel, "If this is a brand-new chat, send a message, and wait for it to appear in chat history.", "muted");
   appendPopupLine(panel, "Or open an existing chat from history.", "muted");
 }
-function renderPageInfo(info) { const panel = document.getElementById("page-info"); if (!panel) { return; } panel.textContent = ""; setRecoveryActions(false); setExportVisible(true); if (!info?.ok) { renderUnsupportedOrDisconnectedInfo(info, panel); return; } const state = info.active ? "Ready" : "Open Microsoft 365 Copilot Chat"; const stateLine = appendPopupLine(panel, state, info.active ? "ok" : "bad"); const strong = document.createElement("strong"); strong.className = stateLine.className; strong.textContent = state; stateLine.textContent = ""; stateLine.appendChild(strong); const title = info.chatName || info.title || "not detected"; appendPopupLine(panel, `Chat: ${title}`, "muted"); appendPopupLine(panel, `ConversationId: ${info.conversationId || "not detected"}`, "muted"); if (!info.active || !info.conversationId) { appendPopupLine(panel, "No saved chat selected yet. If this is a brand-new chat, send a message, and wait for it to appear in chat history.", "muted"); appendPopupLine(panel, "Or open an existing chat from history.", "muted"); setExportEnabled(false); return; } setExportEnabled(true); }
+function renderPageInfo(info) { const panel = document.getElementById("page-info"); if (!panel) { return; } panel.textContent = ""; setRecoveryActions(false); setExportVisible(true); if (!info?.ok) { renderUnsupportedOrDisconnectedInfo(info, panel); return; } const connecting = !info.active && Boolean(info.conversationId) && info.bridgeReady === false; const state = info.active ? "Ready" : connecting ? "Connecting" : "Open Microsoft 365 Copilot Chat"; const stateLine = appendPopupLine(panel, state, info.active ? "ok" : connecting ? "muted" : "bad"); const strong = document.createElement("strong"); strong.className = stateLine.className; strong.textContent = state; stateLine.textContent = ""; stateLine.appendChild(strong); const title = info.chatName || info.title || "not detected"; appendPopupLine(panel, `Chat: ${title}`, "muted"); appendPopupLine(panel, `ConversationId: ${info.conversationId || "not detected"}`, "muted"); if (connecting) { appendPopupLine(panel, "Connecting the exporter to this chat…", "muted"); setExportEnabled(false); return; } if (!info.active || !info.conversationId) { appendPopupLine(panel, "No saved chat selected yet. If this is a brand-new chat, send a message, and wait for it to appear in chat history.", "muted"); appendPopupLine(panel, "Or open an existing chat from history.", "muted"); setExportEnabled(false); return; } setExportEnabled(true); }
 async function activeTab() { const tabs = await chrome.tabs.query({ active: true, currentWindow: true }); lastActiveTabInfo = tabs[0] || null; return lastActiveTabInfo; }
 async function sendToActiveTab(message) { const tab = await activeTab(); if (!tab?.id) { return { ok: false, error: "No active tab", errorCode: "no-active-tab" }; } try { return await chrome.tabs.sendMessage(tab.id, message); } catch (error) { const errorText = error?.message || String(error); const missingReceiver = isMissingReceiverError(errorText); const tabUrl = tab.url || ""; return { ok: false, error: missingReceiver ? "The exporter is not connected to this tab yet." : errorText, rawError: errorText, errorCode: missingReceiver ? "content-script-unavailable" : "message-failed", tabUrl, supportedUrl: isSupportedM365CopilotUrl(tabUrl), personalCopilotUrl: isPersonalCopilotUrl(tabUrl), specificChatUrl: hasSpecificChatInUrl(tabUrl) }; } }
 function stopReloadAutoRefresh() { if (reloadAutoRefreshTimer) { clearInterval(reloadAutoRefreshTimer); reloadAutoRefreshTimer = null; } reloadAutoRefreshInFlight = false; }
-function startReloadAutoRefresh() {
+function startReloadAutoRefresh(statusMessage = "Waiting for the exporter connection to become ready…") {
   stopReloadAutoRefresh();
   const startedAt = Date.now();
   const maxWaitMs = 30000;
   const pollDelayMs = 1250;
   let attempt = 0;
-  setText("result", "Reloading this tab. Waiting for the exporter connection to come back…");
+  setText("result", statusMessage);
   const poll = async () => {
     if (reloadAutoRefreshInFlight) { return; }
     reloadAutoRefreshInFlight = true;
     attempt += 1;
     try {
-      const info = await refreshPageInfo(true);
+      const info = await refreshPageInfo(true, false);
       if (info?.ok && info.active && info.conversationId) {
         stopReloadAutoRefresh();
         setText("result", "Connected. The exporter is ready for this chat.");
@@ -92,14 +113,50 @@ function startReloadAutoRefresh() {
   reloadAutoRefreshTimer = setInterval(poll, pollDelayMs);
   setTimeout(poll, pollDelayMs);
 }
-async function reloadActiveTab() { const tab = await activeTab(); if (!tab?.id) { setText("result", "No active tab to reload."); return; } setText("result", "Reloading this tab. The popup will refresh automatically when the exporter reconnects."); await chrome.tabs.reload(tab.id); startReloadAutoRefresh(); }
+async function reloadActiveTab() { const tab = await activeTab(); if (!tab?.id) { setText("result", "No active tab to reload."); return; } setText("result", "Reloading this tab. The popup will refresh automatically when the exporter reconnects."); await chrome.tabs.reload(tab.id); startReloadAutoRefresh("Reloading this tab. Waiting for the exporter connection to come back…"); }
 async function openM365CopilotChat() { await chrome.tabs.create({ url: M365_COPILOT_CHAT_URL, active: true }); }
 function downloadTextFromPopup(filename, text, mimeType = "text/markdown;charset=utf-8") { const safeFilename = sanitizeFilenamePart(filename); const blob = new Blob([text], { type: mimeType }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = safeFilename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); return { ok: true, filename: safeFilename }; }
 function downloadMultipleTextFromPopup(files) { const results = []; for (const file of files || []) { results.push(downloadTextFromPopup(file.filename, file.text, file.mimeType || "text/markdown;charset=utf-8")); } return results; }
+function closePopupAfterDownloads() { window.close(); }
 function showDiagnostic(payload) { lastDiagnostic = { capturedAt: new Date().toISOString(), result: payload }; setText("result", JSON.stringify(payload, null, 2)); }
-async function refreshPageInfo(render = true) { const info = await sendToActiveTab({ type: "M365CE_GET_PAGE_INFO" }); if (info?.ok && info.active && info.conversationId) { const summary = await sendToActiveTab({ type: "M365CE_TEST_SUBSTRATE" }); if (summary?.ok) { info.chatName = summary.chatName || summary.title || info.chatName; } } if (render) { renderPageInfo(info); } return info; }
-async function exportCurrentConversation() { const button = document.getElementById("export-current"); const oldText = button.textContent; let keepDisabled = false; button.disabled = true; button.textContent = "Exporting…"; setText("result", "Exporting readable Markdown and raw JSON Markdown…"); try { const result = await sendToActiveTab({ type: "M365CE_GET_EXPORT_FILES", options: exportOptionsFromUi() }); if (!result?.ok) { keepDisabled = true; renderPageInfo(result); showDiagnostic(result); return; } const downloads = downloadMultipleTextFromPopup(result.files || []); setText("result", JSON.stringify({ ok: true, exportedAt: result.exportedAt, downloads, summary: result.summary, rendererVersion: result.rendererVersion, options: exportOptionsFromUi() }, null, 2)); } finally { button.disabled = keepDisabled; button.textContent = oldText; } }
-async function downloadDiagnosticBundle() { const exportedAt = new Date().toISOString(); const timestamp = isoTimestampForFilename(new Date(exportedAt)); const bundle = { ok: true, exportedAt, extensionVersion: extensionVersion(), exporterRuntime: "browser-extension", popupOptions: exportOptionsFromUi() }; setText("result", "Preparing diagnostic bundle…"); bundle.pageInfo = await refreshPageInfo(true); bundle.substrateTest = await sendToActiveTab({ type: "M365CE_TEST_SUBSTRATE" }); bundle.observedCapture = await sendToActiveTab({ type: "M365CE_GET_LAST_CAPTURED" }); lastDiagnostic = { capturedAt: exportedAt, result: bundle }; const baseName = sanitizeFilenamePart(bundle.substrateTest?.chatName || bundle.substrateTest?.conversationId || bundle.pageInfo?.conversationId || "m365-copilot-extension-diagnostic"); const filename = `${baseName}_${timestamp}.diagnostic.json.md`; const download = downloadTextFromPopup(filename, diagnosticJsonMarkdown(lastDiagnostic, exportedAt), "text/markdown;charset=utf-8"); setText("result", JSON.stringify({ ok: true, download, bundle }, null, 2)); }
+async function refreshPageInfo(render = true, enrich = true) {
+  const info = await sendToActiveTab({ type: "M365CE_GET_PAGE_INFO" });
+  if (render) { renderPageInfo(info); }
+  if (enrich && info?.ok && info.active && info.conversationId) {
+    const summary = await sendToActiveTab({ type: "M365CE_TEST_SUBSTRATE" });
+    if (summary?.ok) {
+      info.chatName = summary.chatName || summary.title || info.chatName;
+      if (render) { renderPageInfo(info); }
+    }
+  }
+  return info;
+}
+async function exportCurrentConversation() {
+  const button = document.getElementById("export-current");
+  const oldText = button.textContent;
+  let keepDisabled = false;
+  button.disabled = true;
+  button.textContent = "Exporting…";
+  setText("result", "Exporting readable Markdown and raw JSON Markdown…");
+  try {
+    const result = await sendToActiveTab({ type: "M365CE_GET_EXPORT_FILES", options: exportOptionsFromUi() });
+    if (!result?.ok) {
+      const retryable = result?.errorCode === "bridge-timeout" || result?.errorCode === "bridge-not-ready";
+      keepDisabled = !retryable;
+      if (!retryable) { renderPageInfo(result); }
+      showDiagnostic(result);
+      return;
+    }
+    const downloads = downloadMultipleTextFromPopup(result.files || []);
+    setText("result", JSON.stringify({ ok: true, exportedAt: result.exportedAt, downloads, summary: result.summary, rendererVersion: result.rendererVersion, options: exportOptionsFromUi() }, null, 2));
+    closePopupAfterDownloads();
+  } finally {
+    button.disabled = keepDisabled;
+    button.textContent = oldText;
+  }
+}
+async function downloadDiagnosticBundle() { const exportedAt = new Date().toISOString(); const timestamp = isoTimestampForFilename(new Date(exportedAt)); const bundle = { ok: true, exportedAt, extensionVersion: extensionVersion(), exporterRuntime: "browser-extension", popupOptions: exportOptionsFromUi() }; setText("result", "Preparing diagnostic bundle…"); bundle.pageInfo = await refreshPageInfo(true, false); bundle.substrateTest = await sendToActiveTab({ type: "M365CE_TEST_SUBSTRATE" }); bundle.observedCapture = await sendToActiveTab({ type: "M365CE_GET_LAST_CAPTURED" }); lastDiagnostic = { capturedAt: exportedAt, result: bundle }; const baseName = sanitizeFilenamePart(bundle.substrateTest?.chatName || bundle.substrateTest?.conversationId || bundle.pageInfo?.conversationId || "m365-copilot-extension-diagnostic"); const filename = `${baseName}_${timestamp}.diagnostic.json.md`; const download = downloadTextFromPopup(filename, diagnosticJsonMarkdown(lastDiagnostic, exportedAt), "text/markdown;charset=utf-8"); setText("result", JSON.stringify({ ok: true, download, bundle }, null, 2)); }
+async function initializePopup() { const info = await refreshPageInfo(true); if (info?.ok && !info.active && info.conversationId && info.bridgeReady === false) { startReloadAutoRefresh(); } }
 document.getElementById("refresh-page").addEventListener("click", () => { stopReloadAutoRefresh(); refreshPageInfo(true); });
 document.getElementById("reload-tab").addEventListener("click", reloadActiveTab);
 document.getElementById("open-m365-chat").addEventListener("click", openM365CopilotChat);
@@ -107,6 +164,6 @@ document.getElementById("export-current").addEventListener("click", exportCurren
 document.getElementById("download-diagnostic-bundle").addEventListener("click", downloadDiagnosticBundle);
 showVersion();
 hydrateOptionsUi();
-refreshPageInfo();
+initializePopup();
 
 window.addEventListener("unload", stopReloadAutoRefresh);

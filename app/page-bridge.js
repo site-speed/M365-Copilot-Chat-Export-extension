@@ -4,17 +4,51 @@
   const BRIDGE_SOURCE = "m365ce-extension-bridge";
   const CONTENT_SOURCE = "m365ce-extension-content";
   const SUBSTRATE_BASE = "https://substrate.office.com/m365Copilot";
-  const EXTENSION_VERSION = "1.0.40";
+  const EXTENSION_VERSION = "1.0.42";
   let lastCapturedConversation = null;
   let lastCapturedRawConversation = null;
   let fetchHookInstalled = false;
   let xhrHookInstalled = false;
 
+  function summaryTimestampIso(value) {
+    if (value === null || value === undefined || value === "") { return null; }
+    const numeric = Number(value);
+    const normalized = Number.isFinite(numeric) ? (numeric > 0 && numeric < 1000000000000 ? numeric * 1000 : numeric) : value;
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  function summaryPluginLabels(plugins) {
+    const labels = [];
+    const seen = new Set();
+    for (const plugin of plugins || []) {
+      const id = String(plugin?.id || plugin?.name || "").replace(/[\r\n]+/g, " ").trim().slice(0, 160);
+      const source = String(plugin?.source || "").replace(/[\r\n]+/g, " ").trim().slice(0, 160);
+      if (!id) { continue; }
+      const label = source ? `${id} (${source})` : id;
+      if (!seen.has(label)) { seen.add(label); labels.push(label); }
+    }
+    return labels;
+  }
+
   function summarizeConversation(json, source = "unknown") {
     if (!json || typeof json !== "object") {
       return { ok: false, source, error: "No conversation JSON object returned" };
     }
-    return { ok: true, source, conversationId: json.conversationId || null, chatName: json.chatName || null, messageCount: Array.isArray(json.messages) ? json.messages.length : null, topLevelKeys: Object.keys(json).sort(), capturedAt: new Date().toISOString() };
+    return {
+      ok: true,
+      source,
+      conversationId: json.conversationId || null,
+      chatName: json.chatName || null,
+      messageCount: Array.isArray(json.messages) ? json.messages.length : null,
+      createdAt: summaryTimestampIso(json.createTimeUtc),
+      updatedAt: summaryTimestampIso(json.updateTimeUtc),
+      tone: json.tone || null,
+      turnState: json.turnState || null,
+      plugins: summaryPluginLabels(json.plugins),
+      topLevelKeys: Object.keys(json).sort(),
+      capturedAt: new Date().toISOString(),
+    };
   }
 
   function sanitizeFilename(name) {
