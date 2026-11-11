@@ -6,7 +6,7 @@ function isoTimestampForFilename(date = new Date()) { return date.toISOString().
 function sanitizeFilenamePart(value) { const raw = String(value || "m365-copilot-extension-output"); const safe = raw.replace(new RegExp("[\\x00-\\x1F<>:\"/\\\\|?*]+", "g"), " ").replace(/\s+/g, " ").trim(); return (safe || "m365-copilot-extension-output").slice(0, 160).replace(/[ .]+$/g, "") || "m365-copilot-extension-output"; }
 function longestFenceRun(text, marker) { const matches = String(text || "").match(new RegExp(`${marker}{3,}`, "g")) || []; return matches.reduce((max, item) => Math.max(max, item.length), 0); }
 function renderFencedBlock(text, language = "") { const body = String(text ?? ""); const backtickLength = Math.max(3, longestFenceRun(body, "`") + 1); const fence = "`".repeat(backtickLength); return `${fence}${language}\n${body}\n${fence}`; }
-function extensionVersion() { return chrome.runtime.getManifest()?.version || "1.0.42"; }
+function extensionVersion() { return chrome.runtime.getManifest()?.version || "1.0.43"; }
 function diagnosticValue(value, maxLength = 240) { return String(value ?? "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLength); }
 function diagnosticSummaryLines(diagnostic) {
   const summary = diagnostic?.result?.bundle?.substrateTest || diagnostic?.result?.substrateTest || null;
@@ -37,11 +37,18 @@ function savePopupSettings(settings) { try { localStorage.setItem(POPUP_SETTINGS
 function exportOptionsFromUi() { const checkbox = document.getElementById("include-unclassified-records"); return { includeUnclassifiedRecords: checkbox ? checkbox.checked : true }; }
 function hydrateOptionsUi() { const settings = loadPopupSettings(); const checkbox = document.getElementById("include-unclassified-records"); if (!checkbox) { return; } checkbox.checked = settings.includeUnclassifiedRecords !== false; checkbox.addEventListener("change", () => savePopupSettings(exportOptionsFromUi())); }
 function appendPopupLine(parent, text, className = "") { const line = document.createElement("div"); if (className) { line.className = className; } line.textContent = text; parent.appendChild(line); return line; }
-const M365_COPILOT_CHAT_URL = "https://m365.cloud.microsoft/chat/all";
+// Both the legacy and the post-redirect Microsoft 365 Copilot hosts are supported.
+const SUPPORTED_M365_COPILOT_HOSTS = new Set([
+  "m365.cloud.microsoft",
+  "copilot.cloud.microsoft",
+  "microsoft365.com",
+  "www.microsoft365.com"
+]);
+const M365_COPILOT_CHAT_URL = "https://copilot.cloud.microsoft/chat";
 let lastActiveTabInfo = null;
 function urlHost(url) { try { return new URL(String(url || "")).hostname.toLowerCase(); } catch { return ""; } }
 function inferChatIdFromUrl(url) { try { const parsed = new URL(String(url || "")); const pathConversationMatch = parsed.pathname.match(/(?:^|\/)conversation\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:$|\/)/); if (pathConversationMatch) { return pathConversationMatch[1]; } for (const key of ["conversationId", "chatId", "cid", "id"]) { const value = parsed.searchParams.get(key); if (value) { return value; } } const uuidMatch = String(url || "").match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/); return uuidMatch ? uuidMatch[0] : null; } catch { return null; } }
-function isSupportedM365CopilotUrl(url) { try { const parsed = new URL(String(url || "")); const host = parsed.hostname.toLowerCase(); return (host === "m365.cloud.microsoft" || host === "microsoft365.com" || host === "www.microsoft365.com") && parsed.pathname.includes("/chat"); } catch { return false; } }
+function isSupportedM365CopilotUrl(url) { try { const parsed = new URL(String(url || "")); return parsed.protocol === "https:" && SUPPORTED_M365_COPILOT_HOSTS.has(parsed.hostname.toLowerCase()); } catch { return false; } }
 function isPersonalCopilotUrl(url) { return urlHost(url) === "copilot.microsoft.com"; }
 function hasSpecificChatInUrl(url) { return Boolean(inferChatIdFromUrl(url)); }
 function isMissingReceiverError(errorText) { return /could not establish connection|receiving end does not exist/i.test(String(errorText || "")); }
