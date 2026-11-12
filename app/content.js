@@ -9,6 +9,25 @@ const BRIDGE_READY_TIMEOUT_MS = 10000;
 const BRIDGE_FETCH_TIMEOUT_MS = 90000;
 const BRIDGE_CACHED_TIMEOUT_MS = 10000;
 
+// Microsoft 365 Copilot Chat is served from both the legacy host and the new
+// copilot.cloud.microsoft host (Microsoft's 2026 web URL redirect). Support
+// both so the exporter keeps working before and after tenant migration.
+const SUPPORTED_COPILOT_HOSTS = new Set([
+  "m365.cloud.microsoft",
+  "copilot.cloud.microsoft",
+  "microsoft365.com",
+  "www.microsoft365.com"
+]);
+
+function isSupportedCopilotHost(href = location.href) {
+  try {
+    const parsed = new URL(href);
+    return parsed.protocol === "https:" && SUPPORTED_COPILOT_HOSTS.has(parsed.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 function inferConversationIdFromUrl(href = location.href) {
   try {
     const url = new URL(href);
@@ -34,7 +53,10 @@ function inferConversationIdFromUrl(href = location.href) {
 }
 
 function isRelevantChatPage() {
-  return /^https:\/\/(m365\.cloud\.microsoft|(?:www\.)?microsoft365\.com)\//i.test(location.href) && location.href.includes("/chat");
+  // The new Copilot app can open a chat from the root URL, so "/chat" is no
+  // longer a reliable marker. isSpecificChatPage() still requires a
+  // conversation ID before the exporter becomes active.
+  return isSupportedCopilotHost();
 }
 
 function injectScriptFile(filename, datasetKey, onload) {
