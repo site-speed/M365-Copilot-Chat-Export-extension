@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         M365 Copilot Chat Conversation Exporter
 // @namespace    https://github.com/site-speed/M365-Copilot-Chat-Export-userscript
-// @version 1.0.42
+// @version 1.0.43
 // @description  Export the current Microsoft 365 Copilot Chat conversation to readable Markdown and raw JSON Markdown files.
 // @author       Tim Moss
 // @license      MIT
@@ -9,6 +9,7 @@
 // @supportURL   https://github.com/site-speed/M365-Copilot-Chat-Export-userscript/issues
 // @match        https://m365.cloud.microsoft/chat*
 // @match        https://m365.cloud.microsoft/*/chat*
+// @match        https://copilot.cloud.microsoft/*
 // @match        https://microsoft365.com/chat*
 // @match        https://www.microsoft365.com/chat*
 // @run-at       document-end
@@ -18,7 +19,7 @@
 (function () {
   "use strict";
 
-  const SCRIPT_VERSION = "1.0.42";
+  const SCRIPT_VERSION = "1.0.43";
   const SETTINGS_KEY = "m365ce_export_settings_v9";
 
   // --------------------
@@ -4093,7 +4094,11 @@
   function isSubstrateGetConversationUrl(rawUrl) {
     try {
       const parsedUrl = new URL(String(rawUrl || ""), location.href);
-      return parsedUrl.hostname === "substrate.office.com" && parsedUrl.pathname.includes("GetConversation");
+      const host = parsedUrl.hostname.toLowerCase();
+      // After the copilot.cloud.microsoft redirect the GetConversation call
+      // can also be served from the app's own *.cloud.microsoft host.
+      const isKnownHost = host === "substrate.office.com" || host === "cloud.microsoft" || host.endsWith(".cloud.microsoft");
+      return isKnownHost && parsedUrl.pathname.includes("GetConversation");
     } catch {
       return false;
     }
