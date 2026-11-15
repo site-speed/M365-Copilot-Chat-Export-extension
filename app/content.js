@@ -9,54 +9,80 @@ const BRIDGE_READY_TIMEOUT_MS = 10000;
 const BRIDGE_FETCH_TIMEOUT_MS = 90000;
 const BRIDGE_CACHED_TIMEOUT_MS = 10000;
 
-// Microsoft 365 Copilot Chat is served from both the legacy host and the new
-// copilot.cloud.microsoft host (Microsoft's 2026 web URL redirect). Support
-// both so the exporter keeps working before and after tenant migration.
-const SUPPORTED_COPILOT_HOSTS = new Set([
-  "m365.cloud.microsoft",
-  "copilot.cloud.microsoft",
-  "microsoft365.com",
-  "www.microsoft365.com"
-]);
+// Microsoft 365 Copilot Chat is served from the legacy hosts and from the
+// redirected copilot.cloud.microsoft host (Microsoft's 2026 web URL move).
+// Legacy hosts keep their /chat path requirement because the manifest only
+// injects this content script on legacy chat paths; the redirected app can open
+// a chat from any path, including the root URL.
+const COPILOT_REDIRECTED_HOST = "copilot.cloud.microsoft";
+const COPILOT_LEGACY_HOSTS = ["m365.cloud.microsoft", "microsoft365.com", "www.microsoft365.com"];
+const CONVERSATION_ID_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CONVERSATION_ID_COMPACT_PATTERN = /^[0-9a-f]{32}$/i;
+const CONVERSATION_PATH_ID_PATTERN = /(?:^|\/)(?:conversation|chats?)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})(?=$|[\/?#])/i;
+const CONVERSATION_ID_QUERY_KEYS = ["conversationid", "chatid", "cid", "id"];
 
 function isSupportedCopilotHost(href = location.href) {
   try {
     const parsed = new URL(href);
-    return parsed.protocol === "https:" && SUPPORTED_COPILOT_HOSTS.has(parsed.hostname.toLowerCase());
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    return host === COPILOT_REDIRECTED_HOST || COPILOT_LEGACY_HOSTS.includes(host);
   } catch {
     return false;
   }
 }
 
-function inferConversationIdFromUrl(href = location.href) {
+function isRelevantChatPage(href = location.href) {
   try {
-    const url = new URL(href);
-    const pathConversationMatch = url.pathname.match(/(?:^|\/)conversation\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:$|\/)/);
-    if (pathConversationMatch) {
-      return pathConversationMatch[1];
+    const parsed = new URL(href);
+    if (parsed.protocol !== "https:") {
+      return false;
     }
-    for (const key of ["conversationId", "chatId", "cid", "id"]) {
-      const value = url.searchParams.get(key);
-      if (value) {
-        return value;
-      }
+    const host = parsed.hostname.toLowerCase();
+    if (host === COPILOT_REDIRECTED_HOST) {
+      return true;
     }
+    return COPILOT_LEGACY_HOSTS.includes(host) && parsed.pathname.toLowerCase().includes("/chat");
   } catch {
-    // Fall through to generic matching below.
+    return false;
   }
-  const uuidMatch = String(href).match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
-  if (uuidMatch) {
-    return uuidMatch[0];
-  }
-  const compactMatch = String(href).match(/[0-9a-fA-F]{32}/);
-  return compactMatch ? compactMatch[0] : null;
 }
 
-function isRelevantChatPage() {
-  // The new Copilot app can open a chat from the root URL, so "/chat" is no
-  // longer a reliable marker. isSpecificChatPage() still requires a
-  // conversation ID before the exporter becomes active.
-  return isSupportedCopilotHost();
+function isConversationIdValue(value) {
+  const text = String(value ?? "").trim();
+  return CONVERSATION_ID_UUID_PATTERN.test(text) || CONVERSATION_ID_COMPACT_PATTERN.test(text);
+}
+
+// Only recognised conversation routes and conversation-specific query
+// parameters may supply a conversation ID. Scanning the whole URL (or accepting
+// arbitrary query values such as ?tenantId=) would classify non-chat pages as
+// exportable and send a wrong ID to Substrate.
+function inferConversationIdFromUrl(href = location.href) {
+  let url;
+  try {
+    url = new URL(String(href || ""));
+  } catch {
+    return null;
+  }
+  const routePaths = [url.pathname];
+  const hashRoute = String(url.hash || "").replace(/^#/, "").split("?")[0];
+  if (hashRoute.startsWith("/")) {
+    routePaths.push(hashRoute);
+  }
+  for (const routePath of routePaths) {
+    const pathMatch = routePath.match(CONVERSATION_PATH_ID_PATTERN);
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+  }
+  for (const [key, value] of url.searchParams) {
+    if (CONVERSATION_ID_QUERY_KEYS.includes(key.toLowerCase()) && isConversationIdValue(value)) {
+      return value.trim();
+    }
+  }
+  return null;
 }
 
 function injectScriptFile(filename, datasetKey, onload) {

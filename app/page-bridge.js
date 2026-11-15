@@ -238,10 +238,10 @@
     try {
       const parsedUrl = new URL(String(rawUrl || ""), location.href);
       const host = parsedUrl.hostname.toLowerCase();
-      // After the copilot.cloud.microsoft redirect the GetConversation call
-      // can also be served from the app's own *.cloud.microsoft host.
-      const isKnownHost = host === "substrate.office.com" || host === "cloud.microsoft" || host.endsWith(".cloud.microsoft");
-      return isKnownHost && parsedUrl.pathname.includes("GetConversation");
+      // After the copilot.cloud.microsoft redirect, GetConversation can be
+      // proxied through the app's own *.cloud.microsoft host.
+      const knownHost = host === "substrate.office.com" || host === "cloud.microsoft" || host.endsWith(".cloud.microsoft");
+      return knownHost && parsedUrl.pathname.includes("GetConversation");
     } catch {
       return false;
     }

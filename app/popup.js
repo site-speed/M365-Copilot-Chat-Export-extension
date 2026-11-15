@@ -37,18 +37,64 @@ function savePopupSettings(settings) { try { localStorage.setItem(POPUP_SETTINGS
 function exportOptionsFromUi() { const checkbox = document.getElementById("include-unclassified-records"); return { includeUnclassifiedRecords: checkbox ? checkbox.checked : true }; }
 function hydrateOptionsUi() { const settings = loadPopupSettings(); const checkbox = document.getElementById("include-unclassified-records"); if (!checkbox) { return; } checkbox.checked = settings.includeUnclassifiedRecords !== false; checkbox.addEventListener("change", () => savePopupSettings(exportOptionsFromUi())); }
 function appendPopupLine(parent, text, className = "") { const line = document.createElement("div"); if (className) { line.className = className; } line.textContent = text; parent.appendChild(line); return line; }
-// Both the legacy and the post-redirect Microsoft 365 Copilot hosts are supported.
-const SUPPORTED_M365_COPILOT_HOSTS = new Set([
-  "m365.cloud.microsoft",
-  "copilot.cloud.microsoft",
-  "microsoft365.com",
-  "www.microsoft365.com"
-]);
-const M365_COPILOT_CHAT_URL = "https://copilot.cloud.microsoft/chat";
+// Microsoft 365 Copilot Chat is served from the legacy hosts and from the
+// redirected copilot.cloud.microsoft host (Microsoft's 2026 web URL move).
+// This list must stay aligned with content.js and manifest.json.
+const COPILOT_REDIRECTED_HOST = "copilot.cloud.microsoft";
+const COPILOT_LEGACY_HOSTS = ["m365.cloud.microsoft", "microsoft365.com", "www.microsoft365.com"];
+const CONVERSATION_ID_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CONVERSATION_ID_COMPACT_PATTERN = /^[0-9a-f]{32}$/i;
+const CONVERSATION_PATH_ID_PATTERN = /(?:^|\/)(?:conversation|chats?)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})(?=$|[\/?#])/i;
+const CONVERSATION_ID_QUERY_KEYS = ["conversationid", "chatid", "cid", "id"];
+// Legacy chat-history URL. Microsoft redirects the legacy hosts to
+// copilot.cloud.microsoft, so this stays valid for migrated and non-migrated
+// tenants without guessing new-host route names.
+const M365_COPILOT_CHAT_URL = "https://m365.cloud.microsoft/chat/all";
 let lastActiveTabInfo = null;
 function urlHost(url) { try { return new URL(String(url || "")).hostname.toLowerCase(); } catch { return ""; } }
-function inferChatIdFromUrl(url) { try { const parsed = new URL(String(url || "")); const pathConversationMatch = parsed.pathname.match(/(?:^|\/)conversation\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:$|\/)/); if (pathConversationMatch) { return pathConversationMatch[1]; } for (const key of ["conversationId", "chatId", "cid", "id"]) { const value = parsed.searchParams.get(key); if (value) { return value; } } const uuidMatch = String(url || "").match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/); return uuidMatch ? uuidMatch[0] : null; } catch { return null; } }
-function isSupportedM365CopilotUrl(url) { try { const parsed = new URL(String(url || "")); return parsed.protocol === "https:" && SUPPORTED_M365_COPILOT_HOSTS.has(parsed.hostname.toLowerCase()); } catch { return false; } }
+function isConversationIdValue(value) { const text = String(value ?? "").trim(); return CONVERSATION_ID_UUID_PATTERN.test(text) || CONVERSATION_ID_COMPACT_PATTERN.test(text); }
+function inferChatIdFromUrl(url) {
+  let parsed;
+  try {
+    parsed = new URL(String(url || ""));
+  } catch {
+    return null;
+  }
+  const routePaths = [parsed.pathname];
+  const hashRoute = String(parsed.hash || "").replace(/^#/, "").split("?")[0];
+  if (hashRoute.startsWith("/")) {
+    routePaths.push(hashRoute);
+  }
+  for (const routePath of routePaths) {
+    const pathMatch = routePath.match(CONVERSATION_PATH_ID_PATTERN);
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+  }
+  for (const [key, value] of parsed.searchParams) {
+    if (CONVERSATION_ID_QUERY_KEYS.includes(key.toLowerCase()) && isConversationIdValue(value)) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+// Mirrors content.js isRelevantChatPage(): the redirected host may open a chat
+// from any path, while legacy hosts only inject on legacy /chat paths.
+function isSupportedM365CopilotUrl(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (host === COPILOT_REDIRECTED_HOST) {
+      return true;
+    }
+    return COPILOT_LEGACY_HOSTS.includes(host) && parsed.pathname.toLowerCase().includes("/chat");
+  } catch {
+    return false;
+  }
+}
 function isPersonalCopilotUrl(url) { return urlHost(url) === "copilot.microsoft.com"; }
 function hasSpecificChatInUrl(url) { return Boolean(inferChatIdFromUrl(url)); }
 function isMissingReceiverError(errorText) { return /could not establish connection|receiving end does not exist/i.test(String(errorText || "")); }

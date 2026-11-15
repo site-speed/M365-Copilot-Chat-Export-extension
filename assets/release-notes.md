@@ -1,6 +1,6 @@
-# M365 Copilot Chat Conversation Exporter (Extension) v1.0.42
+# M365 Copilot Chat Conversation Exporter (Extension) v1.0.43
 
-Repairs the observed Turn 38 Markdown corruption and closes the successful extension popup without a delay.
+Supports the redirected Microsoft 365 Copilot Chat web address, `copilot.cloud.microsoft`.
 
 ## What it does
 
@@ -11,13 +11,11 @@ Exports Microsoft 365 Copilot Chat conversations to:
 
 ## Improvements
 
-- Preserves original blank lines instead of removing every blank line during duplicate-link cleanup.
-- Prevents system-status emphasis repair from pairing one paragraph's closing `**` with the next paragraph's opening `**`.
-- Restricts non-adjacent outer Markdown fence promotion to Markdown-labelled wrappers, leaving ordinary `text` code blocks independent.
-- Restricts split-heading continuation repair to the observed numbered/lettered `1)` / `A)` heading shape.
-- Rerenders the exact issue #7 Turn 38 fixture with intact emphasis, separate headings/prose/lists, and balanced triple-backtick code blocks.
-- Closes the browser action popup immediately after both download clicks are dispatched, removing the v1.0.41 overlap delay.
-- Retains v1.0.41 bridge readiness, 90-second fetch/export timeout, retry, and curated metadata improvements.
+- Works on `copilot.cloud.microsoft` after the Microsoft 365 Copilot web URL change, including chats that open at the site root.
+- Keeps support for `m365.cloud.microsoft`, `microsoft365.com`, and `www.microsoft365.com` so tenants that have not been redirected still work.
+- Treats only URLs that carry a real conversation identifier as an exportable chat, so unrelated query parameters no longer make a non-chat page look exportable.
+- Detects the conversation download call when it is served from the app's own `*.cloud.microsoft` host.
+- Personal Copilot (`copilot.microsoft.com`) remains outside this tool's scope.
 
 ## Load locally
 
@@ -41,5 +39,7 @@ https://github.com/site-speed/M365-Copilot-Chat-Export-extension
 
 ## Notes
 
-- v1.0.42 is prepared locally and is not described as published until the release/store update completes.
+- Supports the Microsoft 365 Copilot web URL redirect from the August–November 2026 rollout.
+- If the toolbar badge stays off, reload the Copilot Chat tab once after installing or updating the extension.
+- The store update for this version is submitted separately; local unpacked installs can use this release immediately.
 - Exported files may contain sensitive work data and should be handled carefully.
